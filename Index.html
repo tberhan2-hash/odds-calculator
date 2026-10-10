@@ -1,0 +1,683 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#f3f6ef" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#10140f" media="(prefers-color-scheme: dark)" />
+  <link rel="icon" href="data:," />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <title>Odds Calculator</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f3f6ef;
+      --panel: #ffffff;
+      --panel-2: #e8ede3;
+      --ink: #111710;
+      --muted: #526050;
+      --line: #cbd4c6;
+      --accent: #146c43;
+      --accent-ink: #ffffff;
+      --accent-soft: #dceee2;
+      --orange: #c85d18;
+      --danger: #a22c2c;
+      --shadow: 0 18px 54px rgba(29, 47, 25, .10);
+      --radius: 20px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #10140f;
+        --panel: #181e17;
+        --panel-2: #222a20;
+        --ink: #f3f6ee;
+        --muted: #aeb9aa;
+        --line: #394336;
+        --accent: #65c58d;
+        --accent-ink: #092415;
+        --accent-soft: #173a26;
+        --orange: #ef9257;
+        --danger: #ff8e8e;
+        --shadow: 0 18px 54px rgba(0, 0, 0, .28);
+      }
+    }
+    * { box-sizing: border-box; }
+    html { min-width: 320px; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(90deg, transparent 0 49.8%, color-mix(in srgb, var(--line) 28%, transparent) 49.8% 50.2%, transparent 50.2%) center / 72px 72px,
+        var(--bg);
+      color: var(--ink);
+      font-family: Manrope, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, textarea, input { font: inherit; }
+    button { color: inherit; }
+    .shell {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 40px 0 max(48px, env(safe-area-inset-bottom));
+    }
+    .intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1.12fr) minmax(310px, .88fr);
+      align-items: center;
+      gap: clamp(28px, 5vw, 70px);
+      margin: 0 0 30px;
+      padding: 20px 0 10px;
+    }
+    .hero-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 16px;
+      color: var(--accent);
+      font-weight: 800;
+      font-size: .83rem;
+    }
+    .hero-kicker::before {
+      content: "";
+      width: 26px;
+      height: 3px;
+      border-radius: 3px;
+      background: var(--orange);
+    }
+    h1 {
+      font-size: clamp(2.5rem, 5.6vw, 5.25rem);
+      line-height: .93;
+      letter-spacing: -.06em;
+      max-width: 760px;
+      margin: 0 0 18px;
+      font-weight: 800;
+    }
+    .headline-hit { color: var(--accent); }
+    .lede {
+      max-width: 660px;
+      color: var(--muted);
+      font-size: clamp(1rem, 2vw, 1.19rem);
+      line-height: 1.55;
+      margin: 0;
+    }
+    .hero-visual {
+      position: relative;
+      min-height: 310px;
+      display: grid;
+      place-items: center;
+    }
+    .hero-ring {
+      position: absolute;
+      width: 270px;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      border: 42px solid var(--accent-soft);
+      border-top-color: var(--accent);
+      border-right-color: var(--orange);
+      transform: rotate(32deg);
+      opacity: .92;
+    }
+    .odds-ticket {
+      position: relative;
+      z-index: 1;
+      width: min(100%, 342px);
+      background: var(--ink);
+      color: var(--bg);
+      border-radius: 14px 14px 28px 14px;
+      padding: 22px;
+      box-shadow: 18px 20px 0 color-mix(in srgb, var(--orange) 80%, var(--panel)), var(--shadow);
+      transform: rotate(-2deg);
+    }
+    .ticket-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: center;
+      padding-bottom: 14px;
+      margin-bottom: 14px;
+      border-bottom: 1px dashed color-mix(in srgb, var(--bg) 38%, transparent);
+      font-size: .73rem;
+      font-weight: 800;
+    }
+    .live-dot { display: inline-flex; align-items: center; gap: 7px; color: #91e6b0; }
+    .live-dot::before { content: ""; width: 8px; height: 8px; background: #65c58d; border-radius: 50%; box-shadow: 0 0 0 4px rgba(101,197,141,.16); }
+    .ticket-math { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 13px; }
+    .ticket-odds { font: 600 1.25rem/1 IBM Plex Mono, monospace; }
+    .ticket-arrow { height: 1px; background: color-mix(in srgb, var(--bg) 35%, transparent); position: relative; }
+    .ticket-arrow::after { content: ""; position: absolute; right: 0; top: -3px; width: 6px; height: 6px; border-top: 1px solid var(--bg); border-right: 1px solid var(--bg); transform: rotate(45deg); }
+    .ticket-percent { font: 600 2rem/1 IBM Plex Mono, monospace; color: #91e6b0; }
+    .ticket-caption { display: flex; justify-content: space-between; gap: 12px; margin-top: 10px; color: color-mix(in srgb, var(--bg) 67%, transparent); font-size: .67rem; font-weight: 700; }
+    .ticket-punches { position: absolute; left: -8px; top: 50%; transform: translateY(-50%); display: grid; gap: 14px; }
+    .ticket-punches i { display: block; width: 16px; height: 16px; border-radius: 50%; background: var(--bg); }
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(310px, .8fr) minmax(0, 1.2fr);
+      gap: 18px;
+      align-items: start;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .entry { padding: 22px; position: sticky; top: 16px; }
+    .section-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 0 0 10px;
+      font-weight: 800;
+      font-size: .93rem;
+    }
+    .step {
+      display: inline-grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--ink);
+      color: var(--bg);
+      font: 600 .73rem/1 IBM Plex Mono, monospace;
+      margin-right: 8px;
+    }
+    .hint { color: var(--muted); font-size: .77rem; font-weight: 600; }
+    .segments {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 20px;
+    }
+    .segment {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 9px 6px;
+      cursor: pointer;
+      font-size: .79rem;
+      font-weight: 800;
+    }
+    .segment[aria-selected="true"] {
+      background: var(--panel);
+      color: var(--ink);
+      box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    }
+    textarea {
+      display: block;
+      resize: vertical;
+      width: 100%;
+      min-height: 172px;
+      background: var(--bg);
+      color: var(--ink);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+      font: 600 1.15rem/1.65 IBM Plex Mono, monospace;
+      outline: none;
+    }
+    textarea:focus, input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    textarea::placeholder { color: color-mix(in srgb, var(--muted) 68%, transparent); }
+    .subrow { display: flex; justify-content: space-between; gap: 10px; margin: 8px 2px 21px; color: var(--muted); font-size: .73rem; }
+    .link-btn { border: 0; background: transparent; color: var(--accent); padding: 0; cursor: pointer; font-weight: 800; }
+    .format-control { margin: 0 0 20px; }
+    .format-control .segments { grid-template-columns: repeat(4, 1fr); margin-bottom: 0; }
+    .stake-wrap { position: relative; margin-bottom: 20px; }
+    .stake-wrap span { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); font-weight: 800; color: var(--muted); }
+    .stake-wrap input {
+      width: 100%;
+      height: 48px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--bg);
+      color: var(--ink);
+      padding: 0 14px 0 32px;
+      font: 600 1rem/1 IBM Plex Mono, monospace;
+      outline: 0;
+    }
+    .calculate {
+      width: 100%;
+      min-height: 52px;
+      border: 0;
+      border-radius: 13px;
+      background: var(--accent);
+      color: var(--accent-ink);
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 24%, transparent);
+    }
+    .calculate:hover { filter: brightness(1.05); }
+    .calculate:active { transform: translateY(1px); }
+    .results { min-height: 540px; overflow: hidden; }
+    .results-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 20px 22px;
+      border-bottom: 1px solid var(--line);
+    }
+    .results-head h2 { margin: 0; font-size: 1rem; }
+    .result-actions { display: flex; gap: 8px; }
+    .small-btn {
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      border-radius: 9px;
+      padding: 8px 11px;
+      cursor: pointer;
+      color: var(--ink);
+      font-size: .76rem;
+      font-weight: 800;
+    }
+    .small-btn:disabled { opacity: .45; cursor: default; }
+    .empty {
+      min-height: 475px;
+      display: grid;
+      place-items: center;
+      padding: 30px;
+      text-align: center;
+    }
+    .empty-inner { max-width: 420px; }
+    .dial {
+      width: 112px;
+      height: 112px;
+      border: 12px solid var(--panel-2);
+      border-top-color: var(--accent);
+      border-right-color: var(--orange);
+      border-radius: 50%;
+      margin: 0 auto 22px;
+      position: relative;
+    }
+    .dial::after {
+      content: "%";
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      font: 600 1.8rem/1 IBM Plex Mono, monospace;
+      transform: rotate(-45deg);
+      color: var(--ink);
+    }
+    .dial { transform: rotate(45deg); }
+    .empty h3 { margin: 0 0 8px; font-size: 1.25rem; }
+    .empty p { margin: 0; color: var(--muted); line-height: 1.55; font-size: .92rem; }
+    .error-box {
+      margin: 20px 22px 0;
+      border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--line));
+      background: color-mix(in srgb, var(--danger) 9%, var(--panel));
+      color: var(--danger);
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: .84rem;
+      font-weight: 700;
+    }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .metric { background: var(--panel); padding: 18px 20px; min-width: 0; }
+    .metric-label { display: block; color: var(--muted); font-size: .7rem; font-weight: 800; margin-bottom: 7px; }
+    .metric-value { display: block; font: 600 clamp(1.05rem, 2vw, 1.45rem)/1.1 IBM Plex Mono, monospace; overflow-wrap: anywhere; }
+    .metric-value.good { color: var(--accent); }
+    .rows { padding: 10px 22px 22px; }
+    .result-row {
+      display: grid;
+      grid-template-columns: 74px minmax(0, 1fr) minmax(0, 1fr) 28px;
+      gap: 14px;
+      align-items: center;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .result-row:last-child { border-bottom: 0; }
+    .odds-badge {
+      display: inline-flex;
+      justify-content: center;
+      border-radius: 8px;
+      background: var(--ink);
+      color: var(--bg);
+      padding: 7px 8px;
+      font: 600 .82rem/1 IBM Plex Mono, monospace;
+    }
+    .row-label { display: block; color: var(--muted); font-size: .67rem; font-weight: 800; margin-bottom: 4px; }
+    .row-value { display: block; font: 600 .89rem/1.2 IBM Plex Mono, monospace; }
+    .prob { color: var(--accent); }
+    .bar { height: 6px; background: var(--panel-2); border-radius: 999px; overflow: hidden; margin-top: 8px; }
+    .bar > i { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
+    .remove {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      width: 28px;
+      height: 28px;
+      font-size: 1.2rem;
+      line-height: 1;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .remove:hover { background: var(--panel-2); color: var(--danger); }
+    .market-note {
+      padding: 13px 22px;
+      background: var(--accent-soft);
+      color: var(--ink);
+      font-size: .78rem;
+      line-height: 1.45;
+      border-bottom: 1px solid var(--line);
+    }
+    .footnote {
+      margin: 18px auto 0;
+      max-width: 810px;
+      text-align: center;
+      color: var(--muted);
+      font-size: .73rem;
+      line-height: 1.5;
+    }
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: max(22px, env(safe-area-inset-bottom));
+      transform: translate(-50%, 18px);
+      background: var(--ink);
+      color: var(--bg);
+      border-radius: 999px;
+      padding: 10px 16px;
+      font-size: .78rem;
+      font-weight: 800;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .18s, transform .18s;
+      z-index: 10;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    @media (max-width: 760px) {
+      .shell { width: min(100% - 20px, 560px); padding-top: 24px; }
+      .intro { grid-template-columns: 1fr; gap: 16px; margin-bottom: 22px; padding-top: 4px; }
+      .hero-visual { min-height: 238px; }
+      .hero-ring { width: 210px; border-width: 32px; }
+      .odds-ticket { width: min(88%, 340px); padding: 19px; box-shadow: 11px 13px 0 color-mix(in srgb, var(--orange) 80%, var(--panel)), var(--shadow); }
+      .ticket-percent { font-size: 1.65rem; }
+      .workspace { grid-template-columns: 1fr; }
+      .entry { position: static; padding: 17px; }
+      .results { min-height: 420px; }
+      .empty { min-height: 350px; }
+      .results-head { padding: 16px 17px; }
+      .summary { grid-template-columns: 1fr 1fr; }
+      .summary .metric:last-child { grid-column: 1 / -1; }
+      .rows { padding: 6px 17px 16px; }
+      .result-row { grid-template-columns: 68px 1fr 28px; gap: 11px; }
+      .result-row .return-col { grid-column: 2 / 3; }
+      h1 { font-size: clamp(2.35rem, 12vw, 3.7rem); }
+    }
+    @media (max-width: 390px) {
+      .format-control .segment { font-size: .68rem; }
+      .segment { font-size: .72rem; }
+      .result-actions .small-btn:first-child { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="intro">
+      <div>
+        <div class="hero-kicker">Know the number behind the bet</div>
+        <h1>Your book shows the odds. <span class="headline-hit">See what they really mean.</span></h1>
+        <p class="lede">Paste odds straight from your sportsbook and instantly reveal the implied win percentage—plus payouts, no-vig fair chances, and parlay math.</p>
+      </div>
+      <div class="hero-visual" aria-label="Example: plus 145 odds equal a 40.82 percent implied chance">
+        <div class="hero-ring" aria-hidden="true"></div>
+        <div class="odds-ticket">
+          <span class="ticket-punches" aria-hidden="true"><i></i><i></i><i></i></span>
+          <div class="ticket-top"><span>ODDS BREAKDOWN</span><span class="live-dot">INSTANT</span></div>
+          <div class="ticket-math"><span class="ticket-odds">+145</span><span class="ticket-arrow" aria-hidden="true"></span><strong class="ticket-percent">40.82%</strong></div>
+          <div class="ticket-caption"><span>SPORTSBOOK PRICE</span><span>IMPLIED WIN CHANCE</span></div>
+        </div>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <section class="card entry" aria-label="Odds entry">
+        <div class="section-label"><span><span class="step">1</span>What are you calculating?</span></div>
+        <div class="segments" role="tablist" aria-label="Calculation mode">
+          <button class="segment" type="button" role="tab" aria-selected="true" data-mode="single">Straight</button>
+          <button class="segment" type="button" role="tab" aria-selected="false" data-mode="market">No-vig</button>
+          <button class="segment" type="button" role="tab" aria-selected="false" data-mode="parlay">Parlay</button>
+        </div>
+
+        <div class="section-label"><label for="odds"><span class="step">2</span>Paste your odds</label><span class="hint" id="modeHint">One or more bets</span></div>
+        <textarea id="odds" spellcheck="false" inputmode="text" placeholder="-110&#10;+145&#10;2.50&#10;5/2" aria-describedby="parseHelp"></textarea>
+        <div class="subrow"><span id="parseHelp">New lines, spaces, or commas all work.</span><button class="link-btn" id="example" type="button">Try an example</button></div>
+
+        <div class="section-label"><span><span class="step">3</span>Odds format</span></div>
+        <div class="format-control">
+          <div class="segments" role="tablist" aria-label="Odds format">
+            <button class="segment format" type="button" role="tab" aria-selected="true" data-format="auto">Auto</button>
+            <button class="segment format" type="button" role="tab" aria-selected="false" data-format="american">US</button>
+            <button class="segment format" type="button" role="tab" aria-selected="false" data-format="decimal">Decimal</button>
+            <button class="segment format" type="button" role="tab" aria-selected="false" data-format="fractional">Fraction</button>
+          </div>
+        </div>
+
+        <div class="section-label"><label for="stake">Stake per bet</label><span class="hint">Optional</span></div>
+        <div class="stake-wrap"><span>$</span><input id="stake" type="number" min="0" step="1" value="100" inputmode="decimal" aria-label="Stake per bet in dollars" /></div>
+        <button class="calculate" id="calculate" type="button">Calculate percentages</button>
+      </section>
+
+      <section class="card results" aria-live="polite" aria-label="Calculated results">
+        <div class="results-head">
+          <h2 id="resultsTitle">Your results</h2>
+          <div class="result-actions">
+            <button class="small-btn" id="clear" type="button" disabled>Clear</button>
+            <button class="small-btn" id="copy" type="button" disabled>Copy results</button>
+          </div>
+        </div>
+        <div id="output">
+          <div class="empty">
+            <div class="empty-inner">
+              <div class="dial" aria-hidden="true"></div>
+              <h3>Your percentages will land here</h3>
+              <p>Use American odds like <strong>−110</strong>, decimal odds like <strong>2.50</strong>, or fractional odds like <strong>5/2</strong>.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+    <p class="footnote">Implied probability is the break-even chance built into posted odds—not a prediction of what will happen. Returns include the original stake.</p>
+  </main>
+  <div class="toast" id="toast" role="status"></div>
+
+  <script>
+    (function () {
+      'use strict';
+      var state = { mode: 'single', format: 'auto', parsed: [], summary: '' };
+      var oddsInput = document.getElementById('odds');
+      var stakeInput = document.getElementById('stake');
+      var output = document.getElementById('output');
+      var copyBtn = document.getElementById('copy');
+      var clearBtn = document.getElementById('clear');
+      var title = document.getElementById('resultsTitle');
+      var hint = document.getElementById('modeHint');
+      var toast = document.getElementById('toast');
+      var toastTimer;
+
+      function esc(value) {
+        return String(value).replace(/[&<>'"]/g, function (c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'})[c]; });
+      }
+      function fixed(value, digits) {
+        return Number(value).toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+      }
+      function money(value) {
+        return Number(value).toLocaleString(undefined, { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }
+      function gcd(a, b) { while (b) { var t = b; b = a % b; a = t; } return a; }
+      function toFraction(decimal) {
+        var value = decimal - 1;
+        if (value <= 0) return '0/1';
+        var bestN = 1, bestD = 1, bestErr = Infinity;
+        for (var d = 1; d <= 100; d++) {
+          var n = Math.round(value * d), err = Math.abs(value - n / d);
+          if (err < bestErr) { bestErr = err; bestN = n; bestD = d; }
+        }
+        var g = gcd(bestN, bestD);
+        return (bestN / g) + '/' + (bestD / g);
+      }
+      function toAmerican(decimal) {
+        if (decimal >= 2) return '+' + Math.round((decimal - 1) * 100);
+        return String(Math.round(-100 / (decimal - 1))).replace('-', '−');
+      }
+      function parseToken(raw, forced) {
+        var token = raw.trim().replace(/−/g, '-');
+        if (!token) return null;
+        var decimal, kind;
+        if (forced === 'fractional' || (forced === 'auto' && token.indexOf('/') > -1)) {
+          var parts = token.split('/');
+          if (parts.length !== 2) throw new Error('“' + raw + '” is not a valid fraction.');
+          var a = Number(parts[0]), b = Number(parts[1]);
+          if (!(a >= 0) || !(b > 0)) throw new Error('“' + raw + '” needs a positive denominator.');
+          decimal = 1 + a / b; kind = 'fractional';
+        } else if (forced === 'american' || (forced === 'auto' && (/^[+-]/.test(token) || (Number.isInteger(Number(token)) && Math.abs(Number(token)) >= 100)))) {
+          var american = Number(token);
+          if (!isFinite(american) || american === 0 || Math.abs(american) < 100) throw new Error('American odds must be +100 or higher, or −100 or lower.');
+          decimal = american > 0 ? 1 + american / 100 : 1 + 100 / Math.abs(american); kind = 'american';
+        } else {
+          decimal = Number(token); kind = 'decimal';
+          if (!isFinite(decimal) || decimal <= 1) throw new Error('“' + raw + '” must be decimal odds above 1.00.');
+        }
+        var probability = 1 / decimal;
+        return { raw: raw, decimal: decimal, probability: probability, kind: kind };
+      }
+      function tokenize(value) {
+        return value.split(/[\s,;]+/).map(function (x) { return x.trim(); }).filter(Boolean);
+      }
+      function displayInput(item) {
+        if (item.kind === 'american') return item.raw.replace('-', '−');
+        return item.raw;
+      }
+      function emptyState() {
+        title.textContent = 'Your results';
+        output.innerHTML = '<div class="empty"><div class="empty-inner"><div class="dial" aria-hidden="true"></div><h3>Your percentages will land here</h3><p>Use American odds like <strong>−110</strong>, decimal odds like <strong>2.50</strong>, or fractional odds like <strong>5/2</strong>.</p></div></div>';
+        state.parsed = []; state.summary = ''; copyBtn.disabled = true; clearBtn.disabled = true;
+      }
+      function showError(message) {
+        output.innerHTML = '<div class="error-box">' + esc(message) + '</div><div class="empty"><div class="empty-inner"><h3>Check the odds and try again</h3><p>Keep each price separate with a new line, space, or comma.</p></div></div>';
+        copyBtn.disabled = true; clearBtn.disabled = false;
+      }
+      function row(item, index, probability, returnValue, label, decimalOverride, returnLabel) {
+        var pct = probability * 100;
+        var shownDecimal = decimalOverride || item.decimal;
+        return '<div class="result-row">' +
+          '<div><span class="odds-badge">' + esc(displayInput(item)) + '</span></div>' +
+          '<div><span class="row-label">' + esc(label || 'IMPLIED CHANCE') + '</span><span class="row-value prob">' + fixed(pct, 2) + '%</span><div class="bar"><i style="width:' + Math.min(100, Math.max(0, pct)) + '%"></i></div></div>' +
+          '<div class="return-col"><span class="row-label">' + esc(returnLabel || 'RETURN / DECIMAL') + '</span><span class="row-value">' + money(returnValue) + ' · ' + fixed(shownDecimal, 2) + '</span></div>' +
+          '<button class="remove" type="button" aria-label="Remove ' + esc(displayInput(item)) + '" data-remove="' + index + '">×</button>' +
+          '</div>';
+      }
+      function calculate() {
+        var tokens = tokenize(oddsInput.value);
+        if (!tokens.length) { showError('Paste at least one set of odds to calculate.'); return; }
+        if (tokens.length > 30) { showError('Keep each calculation to 30 odds or fewer.'); return; }
+        var stake = Number(stakeInput.value);
+        if (!isFinite(stake) || stake < 0) { showError('Enter a valid stake of $0 or more.'); return; }
+        try {
+          state.parsed = tokens.map(function (token) { return parseToken(token, state.format); });
+        } catch (err) { showError(err.message); return; }
+        if (state.mode === 'market' && state.parsed.length < 2) { showError('No-vig needs at least two outcomes from the same market.'); return; }
+        render(stake);
+      }
+      function render(stake) {
+        var items = state.parsed;
+        var html = '', summary = '';
+        if (state.mode === 'single') {
+          var avg = items.reduce(function (s, x) { return s + x.probability; }, 0) / items.length;
+          html += '<div class="summary"><div class="metric"><span class="metric-label">ODDS ENTERED</span><span class="metric-value">' + items.length + '</span></div><div class="metric"><span class="metric-label">AVERAGE CHANCE</span><span class="metric-value good">' + fixed(avg * 100, 2) + '%</span></div><div class="metric"><span class="metric-label">STAKE PER BET</span><span class="metric-value">' + money(stake) + '</span></div></div>';
+          html += '<div class="rows">' + items.map(function (x, i) { return row(x, i, x.probability, stake * x.decimal); }).join('') + '</div>';
+          summary = 'Odds percentages\n' + items.map(function (x) { return displayInput(x) + ' → ' + fixed(x.probability * 100, 2) + '% implied | ' + money(stake * x.decimal) + ' return on ' + money(stake); }).join('\n');
+          title.textContent = 'Straight odds';
+        } else if (state.mode === 'market') {
+          var total = items.reduce(function (s, x) { return s + x.probability; }, 0);
+          var hold = (total - 1) * 100;
+          html += '<div class="summary"><div class="metric"><span class="metric-label">MARKET TOTAL</span><span class="metric-value">' + fixed(total * 100, 2) + '%</span></div><div class="metric"><span class="metric-label">BOOK MARGIN</span><span class="metric-value">' + (hold >= 0 ? '+' : '') + fixed(hold, 2) + '%</span></div><div class="metric"><span class="metric-label">FAIR TOTAL</span><span class="metric-value good">100.00%</span></div></div>';
+          html += '<div class="market-note">Fair percentages remove the bookmaker margin by scaling every outcome to a 100% total.</div>';
+          html += '<div class="rows">' + items.map(function (x, i) { var fair = x.probability / total; var fairDecimal = 1 / fair; return row(x, i, fair, stake * fairDecimal, 'NO-VIG FAIR CHANCE', fairDecimal, 'FAIR RETURN / DECIMAL'); }).join('') + '</div>';
+          summary = 'No-vig market\nBook margin: ' + (hold >= 0 ? '+' : '') + fixed(hold, 2) + '%\n' + items.map(function (x) { return displayInput(x) + ' → ' + fixed((x.probability / total) * 100, 2) + '% fair'; }).join('\n');
+          title.textContent = 'No-vig market';
+        } else {
+          var combinedDecimal = items.reduce(function (p, x) { return p * x.decimal; }, 1);
+          var combinedProb = 1 / combinedDecimal;
+          var returnValue = stake * combinedDecimal;
+          html += '<div class="summary"><div class="metric"><span class="metric-label">PARLAY CHANCE</span><span class="metric-value good">' + fixed(combinedProb * 100, 2) + '%</span></div><div class="metric"><span class="metric-label">COMBINED ODDS</span><span class="metric-value">' + toAmerican(combinedDecimal) + '</span></div><div class="metric"><span class="metric-label">POTENTIAL RETURN</span><span class="metric-value">' + money(returnValue) + '</span></div></div>';
+          html += '<div class="market-note">Assumes every leg is independent. Correlated outcomes can make this estimate inaccurate.</div>';
+          html += '<div class="rows">' + items.map(function (x, i) { return row(x, i, x.probability, stake * x.decimal, 'LEG CHANCE'); }).join('') + '</div>';
+          summary = items.length + '-leg parlay\nCombined odds: ' + toAmerican(combinedDecimal) + ' (' + fixed(combinedDecimal, 2) + ')\nImplied chance: ' + fixed(combinedProb * 100, 2) + '%\n' + money(stake) + ' stake → ' + money(returnValue) + ' return';
+          title.textContent = items.length + '-leg parlay';
+        }
+        output.innerHTML = html;
+        state.summary = summary;
+        copyBtn.disabled = false; clearBtn.disabled = false;
+      }
+      function select(buttons, active, key) {
+        buttons.forEach(function (button) { button.setAttribute('aria-selected', String(button.dataset[key] === active)); });
+      }
+      document.querySelectorAll('[data-mode]').forEach(function (button) {
+        button.addEventListener('click', function () {
+          state.mode = button.dataset.mode;
+          select(document.querySelectorAll('[data-mode]'), state.mode, 'mode');
+          hint.textContent = state.mode === 'market' ? 'Same market outcomes' : state.mode === 'parlay' ? 'One leg per line' : 'One or more bets';
+          if (state.parsed.length) calculate();
+        });
+      });
+      document.querySelectorAll('[data-format]').forEach(function (button) {
+        button.addEventListener('click', function () {
+          state.format = button.dataset.format;
+          select(document.querySelectorAll('[data-format]'), state.format, 'format');
+          if (state.parsed.length) calculate();
+        });
+      });
+      document.getElementById('calculate').addEventListener('click', calculate);
+      document.getElementById('example').addEventListener('click', function () {
+        oddsInput.value = '-110\n+135\n+220';
+        oddsInput.focus();
+      });
+      clearBtn.addEventListener('click', function () { oddsInput.value = ''; emptyState(); oddsInput.focus(); });
+      output.addEventListener('click', function (event) {
+        var btn = event.target.closest('[data-remove]');
+        if (!btn) return;
+        var tokens = tokenize(oddsInput.value);
+        tokens.splice(Number(btn.dataset.remove), 1);
+        oddsInput.value = tokens.join('\n');
+        if (tokens.length) calculate(); else emptyState();
+      });
+      function showToast(message) {
+        toast.textContent = message; toast.classList.add('show');
+        clearTimeout(toastTimer); toastTimer = setTimeout(function () { toast.classList.remove('show'); }, 1800);
+      }
+      copyBtn.addEventListener('click', function () {
+        if (!state.summary) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(state.summary).then(function () { showToast('Results copied'); }, function () { fallbackCopy(); });
+        } else { fallbackCopy(); }
+      });
+      function fallbackCopy() {
+        var area = document.createElement('textarea'); area.value = state.summary; area.style.position = 'fixed'; area.style.opacity = '0';
+        document.body.appendChild(area); area.select();
+        try { document.execCommand('copy'); showToast('Results copied'); } catch (e) { showToast('Select and copy the results'); }
+        document.body.removeChild(area);
+      }
+      oddsInput.addEventListener('keydown', function (event) {
+        if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); calculate(); }
+      });
+    }());
+  </script>
+</body>
+</html>
